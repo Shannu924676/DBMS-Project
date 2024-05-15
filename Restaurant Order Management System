@@ -1,0 +1,140 @@
+-- Create the database
+CREATE DATABASE IF NOT EXISTS RestaurantManagementSystem;
+
+-- Use the newly created database
+USE RestaurantManagementSystem;
+
+-- Table to store customer details
+CREATE TABLE IF NOT EXISTS Customers (
+    CustomerID INT PRIMARY KEY AUTO_INCREMENT,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    Email VARCHAR(100),
+    Phone VARCHAR(20),
+    Address VARCHAR(255),
+    Age INT -- Added Age column
+);
+
+-- Table to store order details
+CREATE TABLE IF NOT EXISTS Orders (
+    OrderID INT PRIMARY KEY AUTO_INCREMENT,
+    CustomerID INT,
+    OrderDate DATETIME,
+    TotalAmount DECIMAL(10,2),
+    StaffID INT, -- Added StaffID column
+    FOREIGN KEY (CustomerID) REFERENCES Customers(CustomerID),
+    FOREIGN KEY (StaffID) REFERENCES Staff(StaffID)
+);
+
+-- Table to store order items
+CREATE TABLE IF NOT EXISTS OrderItems (
+    OrderItemID INT PRIMARY KEY AUTO_INCREMENT,
+    OrderID INT,
+    MenuItem VARCHAR(100),
+    Quantity INT,
+    Price DECIMAL(10,2),
+    FOREIGN KEY (OrderID) REFERENCES Orders(OrderID)
+);
+
+-- Table to store menu items
+CREATE TABLE IF NOT EXISTS MenuItems (
+    MenuItemID INT PRIMARY KEY AUTO_INCREMENT,
+    Name VARCHAR(100),
+    Description TEXT,
+    Category VARCHAR(50),
+    Price DECIMAL(10,2)
+);
+
+-- Table to store staff information
+CREATE TABLE IF NOT EXISTS Staff (
+    StaffID INT PRIMARY KEY AUTO_INCREMENT,
+    FirstName VARCHAR(50),
+    LastName VARCHAR(50),
+    Role VARCHAR(50),
+    Email VARCHAR(100),
+    Phone VARCHAR(20),
+    StartDate DATE
+);
+
+-- Inserting values into Customers table
+INSERT INTO Customers (FirstName, LastName, Email, Phone, Address, Age)
+VALUES 
+    ('John', 'Doe', 'john.doe@example.com', '123-456-7890', '123 Main St', 30), -- Added Age for John
+    ('Jane', 'Smith', 'jane.smith@example.com', '456-789-0123', '456 Elm St', 25); -- Added Age for Jane
+
+-- Inserting values into Orders table
+INSERT INTO Orders (CustomerID, OrderDate, TotalAmount, StaffID)
+VALUES 
+    (1, '2024-04-28 12:00:00', 50.00, 1), -- Assuming Michael took the first order
+    (2, '2024-04-28 12:30:00', 35.00, 2); -- Assuming Emily took the second order
+
+-- Inserting values into OrderItems table
+INSERT INTO OrderItems (OrderID, MenuItem, Quantity, Price)
+VALUES 
+    (1, 'Cheeseburger', 2, 20.00),
+    (1, 'French Fries', 1, 10.00),
+    (2, 'Chicken Sandwich', 1, 15.00),
+    (2, 'Soda', 2, 5.00);
+
+-- Inserting values into MenuItems table
+INSERT INTO MenuItems (Name, Description, Category, Price)
+VALUES 
+    ('Cheeseburger', 'Juicy beef patty topped with melted cheese, lettuce, tomato, and pickles on a sesame seed bun.', 'Burgers', 10.00),
+    ('French Fries', 'Crispy golden fries sprinkled with salt.', 'Sides', 5.00),
+    ('Chicken Sandwich', 'Grilled chicken breast topped with lettuce, tomato, and mayonnaise on a toasted bun.', 'Sandwiches', 12.00),
+    ('Soda', 'Refreshing carbonated beverage available in various flavors.', 'Beverages', 2.50);
+
+-- Inserting values into Staff table
+INSERT INTO Staff (FirstName, LastName, Role, Email, Phone, StartDate)
+VALUES 
+    ('Michael', 'Smith', 'Chef', 'michael.smith@example.com', '123-456-7890', '2020-01-15'),
+    ('Emily', 'Johnson', 'Waiter', 'emily.johnson@example.com', '456-789-0123', '2021-03-10'),
+    ('David', 'Brown', 'Manager', 'david.brown@example.com', '789-012-3456', '2019-07-20');
+
+-- Alter table to add a column
+ALTER TABLE Customers ADD Age INT;
+
+-- Update customer records to add age
+UPDATE Customers SET Age = 30 WHERE CustomerID = 1;
+UPDATE Customers SET Age = 25 WHERE CustomerID = 2;
+
+-- Create a view to display orders with customer details
+CREATE VIEW OrderDetails AS
+SELECT o.OrderID, o.OrderDate, c.FirstName, c.LastName, c.Email, c.Phone, o.TotalAmount
+FROM Orders o
+JOIN Customers c ON o.CustomerID = c.CustomerID;
+
+-- Select from the view
+SELECT * FROM OrderDetails;
+
+-- Create a stored procedure to calculate total sales
+DELIMITER //
+CREATE PROCEDURE CalculateTotalSales()
+BEGIN
+    DECLARE total DECIMAL(10,2);
+    SELECT SUM(TotalAmount) INTO total FROM Orders;
+    SELECT total;
+END //
+DELIMITER ;
+
+-- Call the stored procedure
+CALL CalculateTotalSales();
+
+-- Join to get order details with customer and staff information
+SELECT 
+    o.OrderID,
+    o.OrderDate,
+    c.FirstName AS CustomerFirstName,
+    c.LastName AS CustomerLastName,
+    c.Email AS CustomerEmail,
+    c.Phone AS CustomerPhone,
+    s.FirstName AS StaffFirstName,
+    s.LastName AS StaffLastName,
+    s.Role AS StaffRole,
+    oi.MenuItem,
+    oi.Quantity,
+    oi.Price
+FROM Orders o
+JOIN Customers c ON o.CustomerID = c.CustomerID
+JOIN Staff s ON o.StaffID = s.StaffID
+JOIN OrderItems oi ON o.OrderID = oi.OrderID;
